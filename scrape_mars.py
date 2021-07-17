@@ -7,12 +7,24 @@ import pandas as pd
 import requests
 import time
 from flask import Flask, render_template
+from pymongo import MongoClient
 
 
+client = MongoClient('mongodb+srv://mongo:mongo@ngranback.bmasa.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
+NLG_DB = client['NLG_DB']
+mars_scrape_collection = NLG_DB['Mars_Scrape']
 
 
 
 app = Flask(__name__)
+
+@app.route("/")
+def home():
+    for item in mars_scrape_collection.find():
+        print(item)
+    return 'home'
+    
+
 @app.route("/scrape")
 def scrape():
 
@@ -62,7 +74,7 @@ def scrape():
 
     html2 = browser.html
     soup2 = BeautifulSoup(html2, 'html.parser')
-    browser.close()
+
 
     src = soup2.find('img', class_='fancybox-image')['src']
     featured_image_url = url2 + src
@@ -138,16 +150,12 @@ def scrape():
         'Hemisphere Photos': hemisphere_image_urls, 
     }
 
+    print(return_dict)
     
-    # connect to Mongo 
-
-    client = MongoClient('mongodb+srv://mongo:mongo@ngranback.bmasa.mongodb.net/myFirstDatabase?retryWrites=true&w=majority')
-    NLG_DB = client['NLG_DB']
-    mars_scrape_collection = NLG_DB['Mars_Scrape']
-
-    mars_scrape_collection.insert_many(return_dict)
-
-
+    # send to Mongo 
+    mars_scrape_collection.insert_one(return_dict)
+    return 'scraped'
+app.run()
 
 
 
